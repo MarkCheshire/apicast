@@ -297,11 +297,7 @@ Location: http://example.com/redirect\?code=\w+&state=\w+
     }
   }
 
-<<<<<<< bb459e2f01eb14330a01a8476210d925d53c7002
-  set $backend_endpoint 'http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend';
-=======
     set $backend_endpoint 'http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend';
->>>>>>> Fixes and examples to get OAuth scenarios working with APIcast + provide Sample Authorization server for testing
     set $backend_host '127.0.0.1';
     set $backend_authentication_type 'provider_key';
     set $backend_authentication_value 'fookey';
