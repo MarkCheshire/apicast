@@ -48,8 +48,6 @@ local function request_token(params)
   end
 end
 
-
-
 -- Check valid params ( client_id / secret / redirect_url, whichever are sent) against 3scale
 local function check_client_credentials(params)
   local res = ngx.location.capture("/_threescale/check_credentials",

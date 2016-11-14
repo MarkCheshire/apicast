@@ -297,7 +297,11 @@ Location: http://example.com/redirect\?code=\w+&state=\w+
     }
   }
 
+<<<<<<< bb459e2f01eb14330a01a8476210d925d53c7002
   set $backend_endpoint 'http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend';
+=======
+    set $backend_endpoint 'http://127.0.0.1:$TEST_NGINX_SERVER_PORT/backend';
+>>>>>>> Fixes and examples to get OAuth scenarios working with APIcast + provide Sample Authorization server for testing
     set $backend_host '127.0.0.1';
     set $backend_authentication_type 'provider_key';
     set $backend_authentication_value 'fookey';
@@ -326,7 +330,7 @@ GET /t
 --- error_code: 200
 
 
-=== TEST 1: calling with correct access_token proxies to the api upstream
+=== TEST 11: calling with correct access_token proxies to the api upstream
 --- http_config
   lua_package_path "$TEST_NGINX_LUA_PATH";
   include $TEST_NGINX_UPSTREAM_CONFIG;
