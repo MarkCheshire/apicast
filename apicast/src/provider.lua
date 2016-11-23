@@ -39,20 +39,32 @@ local _M = {
 }
 
 function _M.configure(contents)
-  local config = configuration.parse(contents)
+  local config, err = configuration.parse(contents)
+
+  if err then
+    ngx.log(ngx.WARN, 'not configured: ', err)
+    return nil, err
+  end
 
   _M.contents = configuration.encode(contents)
-  _M.configured = true
-  _M.configuration = config
-  _M.services = config.services or {} -- for compatibility reasons
+
+  if config then
+    _M.configured = true
+    _M.configuration = config
+    _M.services = config.services or {} -- for compatibility reasons
+    return config
+  else
+    _M.configured = false
+    _M.services = false
+  end
 end
 
 function _M.init(config)
-  _M.configure(config)
-
   math.randomseed(ngx.now())
   -- First calls to math.random after a randomseed tend to be similar; discard them
   for _=1,3 do math.random() end
+
+  return _M.configure(config)
 end
 
 -- Error Codes
@@ -81,6 +93,13 @@ local function error_no_match(service)
   ngx.header.content_type = service.no_match_headers
   ngx.print(service.error_no_match)
   ngx.exit(ngx.HTTP_OK)
+end
+
+local function error_service_not_found(host)
+  ngx.status = 404
+  ngx.print('')
+  ngx.log(ngx.WARN, 'could not find service for host: ', host)
+  ngx.exit(ngx.status)
 end
 -- End Error Codes
 
@@ -193,7 +212,7 @@ local http = {
 
 local function oauth_authrep(service)
   ngx.var.cached_key = ngx.var.cached_key .. ":" .. ngx.var.usage
-  local access_tokens = ngx.shared.api_keys
+  local access_tokens = assert(ngx.shared.api_keys, 'missing shared dictionary: api_keys')
   local is_known = access_tokens:get(ngx.var.cached_key)
 
   if is_known ~= 200 then
@@ -252,23 +271,44 @@ function _M.authorize(backend_version, service)
   end
 end
 
-function _M.call(host)
+function _M.set_service(host)
   host = host or ngx.var.host
   local service = _M.find_service(host)
 
   if not service then
-    ngx.status = 404
-    ngx.print('')
-    ngx.log(ngx.WARN, 'could not find service for host: ', host)
-    return ngx.exit(ngx.status)
+    error_service_not_found(host)
   end
+
+  ngx.ctx.service = service
+end
+
+function _M.set_upstream()
+  local service = ngx.ctx.service
+
+  -- The default values are only for tests. We need to set at least the scheme.
+  local scheme, _, _, host, port, path =
+    unpack(configuration.url(service.api_backend) or { 'http' })
+
+  ngx.ctx.dns = dns_resolver:new{ nameservers = resty_resolver.nameservers() }
+  ngx.ctx.resolver = resty_resolver.new(ngx.ctx.dns)
+  ngx.var.proxy_pass = scheme .. '://upstream' .. (path or '')
+  ngx.req.set_header('Host', service.hostname_rewrite or host or ngx.var.host)
+  ngx.ctx.upstream = ngx.ctx.resolver:get_servers(host, { port = port })
+end
+
+function _M.call(host)
+  host = host or ngx.var.host
+  if not ngx.ctx.service then
+    _M.set_service(host)
+  end
+
+  local service = ngx.ctx.service
 
   ngx.var.backend_authentication_type = service.backend_authentication.type
   ngx.var.backend_authentication_value = service.backend_authentication.value
   ngx.var.backend_host = service.backend.host or ngx.var.backend_host
 
   ngx.var.service_id = tostring(service.id)
-  ngx.ctx.service = service
 
   ngx.var.version = _M.configuration.version
 
@@ -283,8 +323,8 @@ function _M.call(host)
     end
   end
 
-  ngx.ctx.dns = dns_resolver:new{ nameservers = resty_resolver.nameservers() }
-  ngx.ctx.resolver = resty_resolver.new(ngx.ctx.dns)
+  ngx.ctx.dns = ngx.ctx.dns or dns_resolver:new{ nameservers = resty_resolver.nameservers() }
+  ngx.ctx.resolver = ngx.ctx.resolver or resty_resolver.new(ngx.ctx.dns)
 
   local backend_upstream = ngx.ctx.resolver:get_servers(server, { port = port or nil })
   ngx.log(ngx.DEBUG, '[resolver] resolved backend upstream: ', #backend_upstream)
@@ -298,12 +338,11 @@ function _M.call(host)
       ngx.log(ngx.DEBUG, 'apicast oauth flow')
       return function() return f(params) end
     end
+  end
 
-  else
-    return function()
-      -- call access phase
-      return _M.access(service)
-    end
+  return function()
+    -- call access phase
+    return _M.access(service)
   end
 end
 
