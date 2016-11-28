@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y build-essential net-tools --fix-missing
 
 # Set an environment variable to store where the app is installed to inside
 # of the Docker image.
-ENV INSTALL_PATH /auth-server
+ENV INSTALL_PATH /opt/app
 RUN mkdir -p $INSTALL_PATH
 
 # This sets the context of where commands will be ran in and is documented
