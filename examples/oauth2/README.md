@@ -47,18 +47,17 @@ The docker compose file spins up 3 services:
 3scale setup
 ------------
 
-To get this working with a 3scale instance 
+To get this working with a 3scale instance the following conditions should be met:
 
-
-Alternatively, you can use `sample_config.json` to run this example instead.
-
+1. Self-managed deployment type and OAuth authentication method should be selected
+2. Login URL/Authorization endpoint on the Integration page needs to be configured, e.g if you're running the auth-server app on localhost this would be http://localhost:3000/auth/login
 
 Requesting an access token
 --------------------------
 
 Once you have APIcast configured to point to your local OAuth testing instance, you can use a tool such as [Postman](https://www.getpostman.com) to request an access token. 
 
-You will need to have an application set up in 3scale and set the Redirect URL to `https://www.getpostman.com/oauth2/callback` 
+You will need to have an application set up in 3scale and set the Redirect URL e.g to `https://www.getpostman.com/oauth2/callback` 
 
 The Auth URL will be the `/authorize` endpoint on your API Gateway instance.
 The Access Token URL will be the `/oauth/token` endpoint on your API Gateway instance. 
@@ -76,3 +75,9 @@ Once logged in, a consent page will be displayed to accept or deny the request.
 The authorization server will callback APIcast to issue an authorization code on request acceptance and the `redirect_uri` directly on denial. 
 
 Once the Authorization Code is sent to the redirect URL (Postman callback endpoint in this case) the exchange of authorization code for an access token is done transparently by Postman behind the scenes. 
+
+
+Redis
+-----
+
+In order to run this example you will need to have redis installed and be running a redis server e.g by running `redis-server` from the command line
