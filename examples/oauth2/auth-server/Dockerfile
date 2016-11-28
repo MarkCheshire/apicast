@@ -17,14 +17,13 @@ RUN mkdir -p $INSTALL_PATH
 # on Docker's website extensively.
 WORKDIR $INSTALL_PATH
 
-# Ensure gems are cached and only get updated when they change. This will
-# drastically increase build times when your gems do not change.
-COPY Gemfile Gemfile
-RUN bundle install
-
 # Copy in the application code from your work station at the current directory
 # over to the working directory.
 COPY . .
+
+# Ensure gems are cached and only get updated when they change. This will
+# drastically increase build times when your gems do not change.
+RUN bundle install
 
 # Expose a volume so that nginx will be able to read in assets in production.
 VOLUME ["$INSTALL_PATH/public"]
