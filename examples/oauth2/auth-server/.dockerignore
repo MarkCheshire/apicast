@@ -1,6 +1,2 @@
 .git
-<<<<<<< f59e2ae6b3265e5db0d4273147a601c04930714a
 .dockerignore
-=======
-.dockerignore
->>>>>>> Docker fixes: remove Gemfile.lock from .dockerignore, copy application into /opt/app, remove redundant COPY from Dockerfile and move bundle install after Gemfile is copied
